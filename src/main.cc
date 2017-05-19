@@ -17,7 +17,7 @@
 int
 fogfs_init()
 {
-    printf("Fogfs starting up...");
+    printf("Fogfs starting up...\n");
     return 0;
 }
 
@@ -32,11 +32,14 @@ fogfs_getattr(const char *path, struct stat *st)
 {
     auto node = cache_get(string(path));
 
+
     if (node) {
         *st = node->get_stat();
+        printf("getattr(%s) -> 0 {mode: 0%o}\n", path, st->st_mode);
         return 0;
     }
     else {
+        printf("getattr(%s) -> -ENOENT\n", path);
         return -ENOENT;
     }
 }

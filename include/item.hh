@@ -25,8 +25,10 @@ class Item {
     Item();
     ~Item();
 
+    mutex    lock;
+
     ItemMeta meta;
-    bool     meta_dirty;
+    bool     dirty;
 
     void*    data; // mmaped temp file
 
@@ -36,6 +38,7 @@ class Item {
 
     // Methods
     struct stat get_stat();
+    int set_time(struct timespec ts);
 };
 
 #endif

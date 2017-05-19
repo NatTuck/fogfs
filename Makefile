@@ -1,31 +1,18 @@
-BIN  := bin/fogfs
-SRCS := $(wildcard src/*.cc)
-OBJS := $(subst src,build,$(SRCS:cc=o))
-HDRS := $(wildcard include/*.hh)
 
-CXX  := g++
-CXXFLAGS := -g -std=gnu++11 -Wall -Werror -I./include \
-	`pkg-config --cflags fuse libsodium`
-LDFLAGS  :=
-LDLIBS   := -lbsd -lxdg-basedir \
-	`pkg-config --libs fuse libsodium`
-
-$(BIN): $(OBJS) bin
-	$(CXX) $(LDFLAGS) -o $(BIN) $(OBJS) \
-        $(LDLIBS)
-
-$(OBJS): build/%.o: src/%.cc build $(HDRS)
-	$(CXX) -c $(CXXFLAGS) \
-        -o $@ $<
-
-bin:
-	mkdir -p bin
+all: build
+	touch meson.build
+	(cd build && ninja)
 
 build:
 	mkdir -p build
+	(cd build && meson ..)
 
 clean:
-	rm -rf bin build
+	rm -rf bin build mnt
 
-.PHONY: clean
+mount: all
+	mkdir -p mnt
+	(cd build && ./fogfs -f -s ../mnt)
+
+.PHONY: all clean mount
 

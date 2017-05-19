@@ -7,8 +7,9 @@ srcs  = srcs0.stdout().strip().split('\n')
 deps = [
   dependency('libsodium', version: '>= 1.0.12'),
   dependency('fuse'),
+  find_library('m'),
   find_library('bsd'),
-  find_library('xdg-basedir')
+  find_library('xdg-basedir'),
 ]
 
 executable('fogfs', srcs,
