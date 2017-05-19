@@ -1,0 +1,12 @@
+
+# Compiler & Editor Artifacts
+*.o
+.#.*
+
+# Deps
+vendor/
+
+# Build artifacts
+build/
+bin/
+

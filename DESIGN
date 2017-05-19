@@ -1,0 +1,62 @@
+Goal: POSIX-ish distributed file system.
+
+Basic idea: Log-based FS
+
+Any write request to a given FS process is first written to a cache. When the cache is flushed,
+any dirty records are written to the log in tree-leaf-first order.
+
+Each flush produces a new root, and possibly starts a new log file.
+
+
+Reads work as follows:
+ - Check for cache invalidation.
+ - Satisfy from cache.
+ - If not, load from the store.
+
+Elements in the filesystem:
+
+ - tree nodes
+ - meta nodes
+ - data blocks
+
+Meta nodes:
+ - Have inode contents.
+ - Has a data area, which can contain file data,
+   direct pointers, or (n-) indirect pointers.
+
+Logfile Format:
+
+ - A series of chunks
+ - Each chunk has a i32 length and data serialized with Serde / msgpack
+
+Kinds of chunk:
+ - Extent ([u8; 16] inode#, u64 start, u64 length, 4k data blocks)
+ - Meta Node (inode#, inode data)
+ - Index - one per log (for each chunk: u64 start, u64 length; length of index at end)
+
+Ring for crypto is nice, but requires OpenSSL for compat.
+
+Encryption with libsodium:
+ - Logfile has a header:
+   - nonce (can equal random file name)
+ - Body of file is encrypted with xchacha20_ic
+ - MAC of whole thing at end
+ - Body is a sequence of chunks.
+ - Last chunk is the index.
+ - Each chunk gets its own hash for integrity.
+
+
+Overhead per log:
+ - 16B nonce
+ - 32B mac
+ - 8B index size
+
+Overhead per chunk:
+ - 16B owner id
+ - 32B hash
+ - 16B size, offset
+
+Overhead per extent:
+ - 16B start, count
+
+
