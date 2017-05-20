@@ -23,6 +23,8 @@ Path::Path(string ss)
         if (jj - ii > 0) {
             parts.push_back(ss.substr(ii, jj - ii));
         }
+
+        ii = jj;
     }
 }
 
@@ -48,6 +50,10 @@ Path::join(Path pp)
 string
 Path::to_s()
 {
+    if (parts.size() == 0) {
+        return string("/");
+    }
+
     string ss;
 
     for (uint ii = 0; ii < parts.size(); ++ii) {

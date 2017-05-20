@@ -10,9 +10,16 @@ build:
 clean:
 	rm -rf bin build mnt
 
-mount: all
+mount: all unmount
 	mkdir -p mnt
 	(cd build && ./fogfs -f -s ../mnt)
 
-.PHONY: all clean mount
+gdb: all unmount
+	mkdir -p mnt
+	(cd build && gdb --args ./fogfs -f -s ../mnt)
+
+unmount:
+	fusermount -u mnt || true
+
+.PHONY: all clean mount unmount gdb
 

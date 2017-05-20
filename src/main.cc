@@ -11,13 +11,16 @@
 #define FUSE_USE_VERSION 26
 #include <fuse.h>
 
+#include "errors.hh"
 #include "item.hh"
+#include "dir.hh"
 #include "cache.hh"
 
 int
 fogfs_init()
 {
     printf("Fogfs starting up...\n");
+    cache_init();
     return 0;
 }
 
@@ -30,17 +33,16 @@ fogfs_access(const char *path, int mask)
 int
 fogfs_getattr(const char *path, struct stat *st)
 {
-    auto node = cache_get(string(path));
-
-
-    if (node) {
+    try {
+        auto node = cache_get_path(string(path));
         *st = node->get_stat();
         printf("getattr(%s) -> 0 {mode: 0%o}\n", path, st->st_mode);
         return 0;
     }
-    else {
-        printf("getattr(%s) -> -ENOENT\n", path);
-        return -ENOENT;
+    catch (ErrNo& ee) {
+        int rv = -ee.code();
+        printf("getattr(%s) -> %d (%s)\n", path, rv, ee.what());
+        return rv;
     }
 }
 
@@ -49,16 +51,32 @@ fogfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
              off_t offset, struct fuse_file_info *fi)
 {
     struct stat st;
-
     printf("readdir(%s)\n", path);
+
+    auto ditem = cache_get_path(path);
+    if (!ditem) {
+        printf("  -> -ENOENT");
+        return -ENOENT;
+    }
+
+    auto dir   = dynamic_pointer_cast<Dir>(ditem);
+    if (!dir) {
+        printf("  -> -ENOTDIR");
+        return -ENOTDIR;
+    }
 
     // filler is a callback that adds one item to the result
     // it will return non-zero when the buffer is full
     st.st_mode = 040755;
     filler(buf, ".", &st, 0);
 
-    //get_stat("/hello.txt", &st);
-    //filler(buf, "hello.txt", &st, 0);
+    auto ents = dir->list();
+    for (auto it = ents.begin(); it != ents.end(); ++it) {
+        auto item = cache_get_id(it->item_id);
+        auto name = (it->name).c_str();
+        st.st_mode = item->meta.mode;
+        filler(buf, name, &st, 0);
+    }
 
     return 0;
 }
@@ -66,8 +84,16 @@ fogfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 int
 fogfs_mknod(const char *path, mode_t mode, dev_t rdev)
 {
-    printf("mknod(%s, %04o)\n", path, mode);
-    return -1;
+    try {
+        cache_create(path, mode);
+        printf("mknod(%s, %o) -> 0\n", path, mode);
+        return 0;
+    }
+    catch (ErrNo& ee) {
+        int rv = -ee.code();
+        printf("mknod(%s, %o) -> %d (%s)\n", path, mode, rv, ee.what());
+        return rv;
+    }
 }
 
 int

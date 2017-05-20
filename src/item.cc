@@ -1,15 +1,36 @@
 
+#include <iostream>
 #include <stdlib.h>
 #include <sys/mman.h>
 #include <string.h>
 #include <cmath>
 
 #include "item.hh"
+#include "errors.hh"
+#include "crypto.hh"
 #include "settings.hh"
+#include "dir.hh"
 
-Item::Item()
+shared_ptr<Item>
+Item::make(uint32_t mode)
 {
+    switch (mode & S_IFMT) {
+    case S_IFREG:
+        return make_shared<Item>(mode);
+    case S_IFDIR:
+        return make_shared<Dir>(mode);
+    case S_IFLNK:
+        // fall through
+    default:
+        throw ErrNo(ENOTSUP);
+    }
+}
 
+Item::Item(uint32_t mode)
+{
+    this->meta.item_id = random_256b();
+    this->meta.mode = mode;
+    this->dirty = true;
 }
 
 Item::~Item()

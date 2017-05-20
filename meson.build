@@ -15,6 +15,5 @@ deps = [
 executable('fogfs', srcs,
            include_directories: include_directories('include'),
            dependencies: deps,
-           cpp_args: ['-std=gnu++11', '-g', '-Werror'])
-
+           cpp_args: ['-std=gnu++14', '-g', '-Werror'])
 
